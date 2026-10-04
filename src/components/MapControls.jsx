@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Minus, LocateFixed, Expand, Shrink } from 'lucide-react'
+import { Plus, Minus, LocateFixed, Expand, Shrink, Grid3x3 } from 'lucide-react'
 
 // Fullscreen API with the webkit prefix for older Safari (iPad)
 const root = typeof document !== 'undefined' ? document.documentElement : null
@@ -35,7 +35,7 @@ function useIsFullscreen() {
   return isFullscreen
 }
 
-export function MapControls({ onZoomIn, onZoomOut, onLocate, following = false }) {
+export function MapControls({ onZoomIn, onZoomOut, onLocate, following = false, showGrid = false, onToggleGrid }) {
   const isFullscreen = useIsFullscreen()
 
   return (
@@ -49,6 +49,15 @@ export function MapControls({ onZoomIn, onZoomOut, onLocate, following = false }
       >
         <LocateFixed size={18} />
       </button>
+      {onToggleGrid && (
+        <button
+          className={`map-ctrl-btn ${showGrid ? 'active' : ''}`}
+          onClick={onToggleGrid}
+          title={showGrid ? 'Hide grid' : 'Show grid'}
+        >
+          <Grid3x3 size={18} />
+        </button>
+      )}
       {fullscreenSupported && (
         <button
           className="map-ctrl-btn"

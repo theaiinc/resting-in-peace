@@ -249,6 +249,20 @@ canvas {
   background: var(--accent2);
 }
 
+/* Grid cell size label */
+.grid-scale {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 900;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(22, 33, 62, 0.85);
+  color: var(--text);
+  font-size: 11px;
+  pointer-events: none;
+}
+
 /* ===== Tap-mode banner ===== */
 .tap-mode-banner {
   position: absolute;

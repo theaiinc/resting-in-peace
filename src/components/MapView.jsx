@@ -16,6 +16,7 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import { haversine } from '../utils/geo'
 import { LayerToggle } from './LayerToggle'
 import { MapControls } from './MapControls'
+import { GridOverlay, gridStepMeters, GRID_MIN_ZOOM } from './GridOverlay'
 
 // Fix leaflet default icon paths in Vite
 delete L.Icon.Default.prototype._getIconUrl
@@ -110,6 +111,22 @@ function MapEventHandler({ tapMode, onMapClick, onMapRef, mapApiRef, places, onS
   return null
 }
 
+// Reports the map zoom level to the parent (for the grid scale label)
+function ZoomWatcher({ onZoom }) {
+  const map = useMap()
+  useEffect(() => { onZoom(map.getZoom()) }, [map, onZoom])
+  useMapEvents({ zoomend() { onZoom(map.getZoom()) } })
+  return null
+}
+
+const GRID_PREF_KEY = 'rip:grid'
+function loadGridPref() {
+  try { return localStorage.getItem(GRID_PREF_KEY) !== '0' } catch { return true }
+}
+function saveGridPref(on) {
+  try { localStorage.setItem(GRID_PREF_KEY, on ? '1' : '0') } catch { /* ignore */ }
+}
+
 // Keeps the map centered on the current location while following
 function FollowLocation({ position, following }) {
   const map = useMap()
@@ -191,6 +208,10 @@ function LeafletMap({
   const newestId = newestPlaceId(places)
   const [following, setFollowing] = useState(true)
   const stopFollowing = useCallback(() => setFollowing(false), [])
+  const [showGrid, setShowGrid] = useState(loadGridPref)
+  const [zoom, setZoom] = useState(17)
+  const toggleGrid = () => setShowGrid(on => { saveGridPref(!on); return !on })
+  const gridVisible = showGrid && zoom >= GRID_MIN_ZOOM
 
   const handleMapRef = useCallback((map) => {
     mapRef.current = map
@@ -229,7 +250,12 @@ function LeafletMap({
         onZoomOut={handleZoomOut}
         onLocate={handleLocate}
         following={following}
+        showGrid={showGrid}
+        onToggleGrid={toggleGrid}
       />
+      {gridVisible && (
+        <div className="grid-scale">Grid {gridStepMeters(zoom)} m</div>
+      )}
       <MapContainer
         center={[15.879, 108.336]}
         zoom={17}
@@ -247,6 +273,8 @@ function LeafletMap({
           onStopFollow={stopFollowing}
         />
         <FollowLocation position={currentPosition} following={following} />
+        <ZoomWatcher onZoom={setZoom} />
+        {showGrid && <GridOverlay dark={activeLayer !== 'sat'} />}
 
         {activeLayer === 'sat' ? (
           <TileLayer

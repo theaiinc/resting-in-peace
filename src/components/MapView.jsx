@@ -26,7 +26,12 @@ L.Icon.Default.mergeOptions({
 // Tile URLs
 const TILE_SATELLITE = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
 const TILE_STREET = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-const TILE_PROBE = 'https://a.tile.openstreetmap.org/10/802/514.png'
+// Probe both providers; the live map is used if either one responds
+const TILE_PROBES = [
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/10/514/802',
+  'https://a.tile.openstreetmap.org/10/802/514.png',
+]
+const PROBE_TIMEOUT_MS = 10000
 
 // Custom colored pin icon
 function pinIcon(color = '#e94560') {
@@ -612,31 +617,29 @@ export function MapView(props) {
 
   useEffect(() => {
     let settled = false
-    const timer = setTimeout(() => {
-      if (!settled) {
-        settled = true
-        setMapMode('canvas')
-      }
-    }, 4000)
-
-    const img = new Image()
-    img.onload = () => {
-      if (!settled) {
-        settled = true
-        clearTimeout(timer)
-        setMapMode('leaflet')
-      }
+    let failures = 0
+    const settle = (mode) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      setMapMode(mode)
     }
-    img.onerror = () => {
-      if (!settled) {
-        settled = true
-        clearTimeout(timer)
-        setMapMode('canvas')
-      }
-    }
-    img.src = TILE_PROBE + '?_=' + Date.now()
+    const timer = setTimeout(() => settle('canvas'), PROBE_TIMEOUT_MS)
 
-    return () => clearTimeout(timer)
+    for (const url of TILE_PROBES) {
+      const img = new Image()
+      img.onload = () => settle('leaflet')
+      img.onerror = () => {
+        failures += 1
+        if (failures === TILE_PROBES.length) settle('canvas')
+      }
+      img.src = url
+    }
+
+    return () => {
+      settled = true
+      clearTimeout(timer)
+    }
   }, [])
 
   if (mapMode === 'probing') {

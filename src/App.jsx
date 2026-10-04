@@ -243,6 +243,7 @@ export default function App() {
           tracks={tracks}
           visibleTrackIds={visibleTrackIds}
           currentTrack={gps.currentTrack}
+          currentPosition={gps.position}
           onMapClick={handleMapClick}
           onPlaceDragEnd={handlePlaceDragEnd}
           onPlaceClick={handlePlaceClick}

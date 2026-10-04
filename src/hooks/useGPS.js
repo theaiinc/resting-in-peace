@@ -12,6 +12,7 @@ export function useGPS({ onDwellPin, onTrackFinished } = {}) {
   const [recording, setRecording] = useState(false)
   const [currentTrack, setCurrentTrack] = useState([]) // [{lat,lng,t}]
   const [status, setStatus] = useState('GPS not started')
+  const [position, setPosition] = useState(null) // {lat,lng,accuracy}
 
   const watchIdRef = useRef(null)
   const motionStateRef = useRef('idle')
@@ -58,6 +59,7 @@ export function useGPS({ onDwellPin, onTrackFinished } = {}) {
         const { latitude: lat, longitude: lng, speed, accuracy } = pos.coords
         const speedMs = speed !== null ? speed : 0
         const now = Date.now()
+        setPosition({ lat, lng, accuracy })
 
         // Motion state machine
         let nextState = motionStateRef.current
@@ -135,5 +137,5 @@ export function useGPS({ onDwellPin, onTrackFinished } = {}) {
     }
   }, [setMotionStateBoth, setRecordingBoth])
 
-  return { motionState, recording, currentTrack, stopRecording, status }
+  return { motionState, recording, currentTrack, position, stopRecording, status }
 }

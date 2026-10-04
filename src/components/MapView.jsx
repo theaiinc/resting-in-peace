@@ -4,6 +4,8 @@ import {
   TileLayer,
   Marker,
   Polyline,
+  Circle,
+  CircleMarker,
   useMapEvents,
   useMap
 } from 'react-leaflet'
@@ -43,6 +45,7 @@ const PROBE_TIMEOUT_MS = 10000
 // Pin colors: the most recently added place stands out from older ones
 const PIN_COLOR = '#533483'
 const NEW_PIN_COLOR = '#e94560'
+const LOCATION_COLOR = '#2f80ed'
 
 function newestPlaceId(places) {
   let newest = null
@@ -158,6 +161,7 @@ function LeafletMap({
   tracks,
   visibleTrackIds,
   currentTrack,
+  currentPosition,
   onMapClick,
   onPlaceDragEnd,
   onPlaceClick,
@@ -223,6 +227,26 @@ function LeafletMap({
             maxNativeZoom={STREET_MAX_NATIVE_ZOOM}
             maxZoom={MAP_MAX_ZOOM}
           />
+        )}
+
+        {/* Current location: accuracy halo + dot */}
+        {currentPosition && (
+          <>
+            {currentPosition.accuracy > 0 && (
+              <Circle
+                center={[currentPosition.lat, currentPosition.lng]}
+                radius={currentPosition.accuracy}
+                interactive={false}
+                pathOptions={{ color: LOCATION_COLOR, weight: 1, opacity: 0.4, fillOpacity: 0.12 }}
+              />
+            )}
+            <CircleMarker
+              center={[currentPosition.lat, currentPosition.lng]}
+              radius={8}
+              interactive={false}
+              pathOptions={{ color: '#fff', weight: 3, fillColor: LOCATION_COLOR, fillOpacity: 1 }}
+            />
+          </>
         )}
 
         {/* Place markers */}
@@ -300,6 +324,7 @@ function CanvasMap({
   tracks,
   visibleTrackIds,
   currentTrack,
+  currentPosition,
   onMapClick,
   onPlaceDragEnd,
   onPlaceClick,
@@ -427,7 +452,19 @@ function CanvasMap({
         ctx.textAlign = 'left'
       }
     })
-  }, [places, routeIds, tracks, visibleTrackIds, currentTrack])
+
+    // Current location dot
+    if (currentPosition) {
+      const { x, y } = project(currentPosition.lat, currentPosition.lng)
+      ctx.beginPath()
+      ctx.arc(x, y, 7, 0, Math.PI * 2)
+      ctx.fillStyle = LOCATION_COLOR
+      ctx.fill()
+      ctx.strokeStyle = 'white'
+      ctx.lineWidth = 3
+      ctx.stroke()
+    }
+  }, [places, routeIds, tracks, visibleTrackIds, currentTrack, currentPosition])
 
   // Expose map API to parent
   useEffect(() => {

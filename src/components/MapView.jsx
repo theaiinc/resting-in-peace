@@ -71,7 +71,7 @@ function pinIcon(color = '#e94560') {
 }
 
 // Internal component to handle map events, expose map instance, and set mapApiRef
-function MapEventHandler({ tapMode, onMapClick, onMapRef, mapApiRef, places }) {
+function MapEventHandler({ tapMode, onMapClick, onMapRef, mapApiRef, places, onStopFollow }) {
   const map = useMap()
 
   useEffect(() => {
@@ -81,26 +81,45 @@ function MapEventHandler({ tapMode, onMapClick, onMapRef, mapApiRef, places }) {
   useEffect(() => {
     if (!mapApiRef) return
     mapApiRef.current = {
-      jumpTo: (lat, lng, z) => map.setView([lat, lng], z || 18),
+      jumpTo: (lat, lng, z) => { onStopFollow(); map.setView([lat, lng], z || 18) },
       fitAll: () => {
         if (!places.length) return
+        onStopFollow()
         if (places.length === 1) { map.setView([places[0].lat, places[0].lng], 18); return }
         const bounds = L.latLngBounds(places.map(p => [p.lat, p.lng]))
         map.fitBounds(bounds, { padding: [50, 50] })
       },
-      fitBounds: (sw, ne) => map.fitBounds([sw, ne], { padding: [50, 50] }),
+      fitBounds: (sw, ne) => { onStopFollow(); map.fitBounds([sw, ne], { padding: [50, 50] }) },
       zoomIn: () => map.zoomIn(),
       zoomOut: () => map.zoomOut(),
     }
-  }, [map, mapApiRef, places])
+  }, [map, mapApiRef, places, onStopFollow])
 
   useMapEvents({
     click(e) {
       if (tapMode) {
         onMapClick(e.latlng.lat, e.latlng.lng)
       }
+    },
+    // Panning the map by hand stops following the current location
+    dragstart() {
+      onStopFollow()
     }
   })
+
+  return null
+}
+
+// Keeps the map centered on the current location while following
+function FollowLocation({ position, following }) {
+  const map = useMap()
+  const lat = position?.lat
+  const lng = position?.lng
+
+  useEffect(() => {
+    if (!following || lat == null || lng == null) return
+    map.panTo([lat, lng], { animate: true })
+  }, [map, following, lat, lng])
 
   return null
 }
@@ -170,6 +189,8 @@ function LeafletMap({
 }) {
   const mapRef = useRef(null)
   const newestId = newestPlaceId(places)
+  const [following, setFollowing] = useState(true)
+  const stopFollowing = useCallback(() => setFollowing(false), [])
 
   const handleMapRef = useCallback((map) => {
     mapRef.current = map
@@ -178,9 +199,16 @@ function LeafletMap({
   const handleZoomIn = () => mapRef.current?.zoomIn()
   const handleZoomOut = () => mapRef.current?.zoomOut()
   const handleLocate = () => {
+    setFollowing(true)
+    const map = mapRef.current
+    const zoom = Math.max(map?.getZoom() ?? 17, 17)
+    if (currentPosition) {
+      map?.flyTo([currentPosition.lat, currentPosition.lng], zoom, { duration: 1.2 })
+      return
+    }
     if (!navigator.geolocation) return
     navigator.geolocation.getCurrentPosition(pos => {
-      mapRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], 17, { duration: 1.2 })
+      mapRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], zoom, { duration: 1.2 })
     })
   }
 
@@ -196,7 +224,12 @@ function LeafletMap({
   return (
     <div className="leaflet-map-wrap">
       <LayerToggle activeLayer={activeLayer} onToggle={onLayerToggle} />
-      <MapControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} onLocate={handleLocate} />
+      <MapControls
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onLocate={handleLocate}
+        following={following}
+      />
       <MapContainer
         center={[15.879, 108.336]}
         zoom={17}
@@ -211,7 +244,9 @@ function LeafletMap({
           onMapRef={handleMapRef}
           mapApiRef={mapApiRef}
           places={places}
+          onStopFollow={stopFollowing}
         />
+        <FollowLocation position={currentPosition} following={following} />
 
         {activeLayer === 'sat' ? (
           <TileLayer

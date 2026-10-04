@@ -245,6 +245,10 @@ canvas {
   background: var(--surface2);
 }
 
+.map-ctrl-btn.active {
+  background: var(--accent2);
+}
+
 /* ===== Tap-mode banner ===== */
 .tap-mode-banner {
   position: absolute;

@@ -35,14 +35,20 @@ function useIsFullscreen() {
   return isFullscreen
 }
 
-export function MapControls({ onZoomIn, onZoomOut, onLocate }) {
+export function MapControls({ onZoomIn, onZoomOut, onLocate, following = false }) {
   const isFullscreen = useIsFullscreen()
 
   return (
     <div className="map-controls">
       <button className="map-ctrl-btn" onClick={onZoomIn} title="Zoom in"><Plus size={18} /></button>
       <button className="map-ctrl-btn" onClick={onZoomOut} title="Zoom out"><Minus size={18} /></button>
-      <button className="map-ctrl-btn" onClick={onLocate} title="My location"><LocateFixed size={18} /></button>
+      <button
+        className={`map-ctrl-btn ${following ? 'active' : ''}`}
+        onClick={onLocate}
+        title={following ? 'Following your location' : 'Follow my location'}
+      >
+        <LocateFixed size={18} />
+      </button>
       {fullscreenSupported && (
         <button
           className="map-ctrl-btn"

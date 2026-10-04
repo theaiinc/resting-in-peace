@@ -170,7 +170,7 @@ export function PlaceSheet({
         <div className="voice-section">
           <div className="voice-label">Voice Note</div>
 
-          {/* Existing audio from Supabase */}
+          {/* Existing saved voice note */}
           {audioUrl && !voice.audioBlob && (
             <div className="voice-player">
               <audio controls src={audioUrl} preload="none" />

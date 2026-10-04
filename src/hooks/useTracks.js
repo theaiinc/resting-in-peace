@@ -1,19 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+import * as db from '../lib/db'
 
 export function useTracks() {
   const [tracks, setTracks] = useState([])
 
   const fetchTracks = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('tracks')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (error) {
-      console.error('fetchTracks error:', error)
-      return
+    try {
+      const data = await db.getAll('tracks')
+      data.sort((a, b) => b.created_at.localeCompare(a.created_at))
+      setTracks(data)
+    } catch (err) {
+      console.error('fetchTracks error:', err)
     }
-    setTracks(data)
   }, [])
 
   useEffect(() => {
@@ -21,27 +19,33 @@ export function useTracks() {
   }, [fetchTracks])
 
   const addTrack = useCallback(async (track) => {
-    const { data, error } = await supabase
-      .from('tracks')
-      .insert(track)
-      .select()
-      .single()
-    if (error) {
-      console.error('addTrack error:', error)
+    try {
+      const data = {
+        dist: 0,
+        duration: 0,
+        pts: [],
+        ...track,
+        id: db.newId(),
+        created_at: new Date().toISOString(),
+      }
+      await db.put('tracks', data)
+      setTracks(prev => [data, ...prev])
+      return data
+    } catch (err) {
+      console.error('addTrack error:', err)
       return null
     }
-    setTracks(prev => [data, ...prev])
-    return data
   }, [])
 
   const deleteTrack = useCallback(async (id) => {
-    const { error } = await supabase.from('tracks').delete().eq('id', id)
-    if (error) {
-      console.error('deleteTrack error:', error)
+    try {
+      await db.remove('tracks', id)
+      setTracks(prev => prev.filter(t => t.id !== id))
+      return true
+    } catch (err) {
+      console.error('deleteTrack error:', err)
       return false
     }
-    setTracks(prev => prev.filter(t => t.id !== id))
-    return true
   }, [])
 
   return { tracks, addTrack, deleteTrack }

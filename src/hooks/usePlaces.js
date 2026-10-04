@@ -1,110 +1,152 @@
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import * as db from '../lib/db'
 
-// Demo data seeded when Supabase has 0 places
-const DEMO_PLACES = [
-  { lat: 15.87900, lng: 108.33500, name: 'Main Gate', brief: '' },
-  { lat: 15.87950, lng: 108.33580, name: 'Cemetery Office', brief: '' },
-  { lat: 15.88010, lng: 108.33640, name: 'Nguyễn Văn An', brief: 'Born 12 March 1938 · Passed 4 January 2001\nBeloved husband, father of three, and retired schoolteacher. Known for his quiet kindness and love of gardening.' },
-  { lat: 15.87980, lng: 108.33620, name: 'Trần Thị Bình', brief: 'Born 7 July 1942 · Passed 18 August 2015\nDevoted wife and grandmother of eight. She made the best bánh xèo in the village.' },
-  { lat: 15.88030, lng: 108.33660, name: 'Lê Minh Châu', brief: 'Born 1955 · Passed 2019 · Section B, Plot 03.' },
-]
+// Seed data shipped as a static file, loaded when local storage has 0 places
+const SEED_URL = `${import.meta.env.BASE_URL}data/places.json`
+const SEEDED_KEY = 'rip:seeded'
+
+function isSeeded() {
+  try { return localStorage.getItem(SEEDED_KEY) === '1' } catch { return false }
+}
+function markSeeded() {
+  try { localStorage.setItem(SEEDED_KEY, '1') } catch { /* ignore */ }
+}
+
+function makePlace(fields) {
+  return {
+    id: db.newId(),
+    name: '',
+    brief: '',
+    has_audio: false,
+    created_at: new Date().toISOString(),
+    ...fields,
+  }
+}
 
 export function usePlaces() {
   const [places, setPlaces] = useState([])
   const [loading, setLoading] = useState(true)
+  // Object URLs for stored voice-note blobs, keyed by place id
+  const audioUrls = useRef(new Map())
+
+  const withAudioUrl = useCallback(async (place) => {
+    if (!place.has_audio) return { ...place, audio_url: null }
+    let url = audioUrls.current.get(place.id)
+    if (!url) {
+      const rec = await db.get('audio', place.id)
+      if (!rec) return { ...place, audio_url: null }
+      url = URL.createObjectURL(rec.blob)
+      audioUrls.current.set(place.id, url)
+    }
+    return { ...place, audio_url: url }
+  }, [])
+
+  const revokeAudioUrl = (id) => {
+    const url = audioUrls.current.get(id)
+    if (url) {
+      URL.revokeObjectURL(url)
+      audioUrls.current.delete(id)
+    }
+  }
 
   const fetchPlaces = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase.from('places').select('*').order('created_at', { ascending: true })
-    if (error) {
-      console.error('fetchPlaces error:', error)
-      setLoading(false)
-      return
-    }
-
-    if (data.length === 0) {
-      // Seed demo data
-      const { data: seeded, error: seedErr } = await supabase
-        .from('places')
-        .insert(DEMO_PLACES)
-        .select()
-      if (seedErr) {
-        console.error('seed error:', seedErr)
-      } else {
-        setPlaces(seeded)
+    try {
+      let data = await db.getAll('places')
+      if (data.length === 0 && !isSeeded()) {
+        try {
+          const res = await fetch(SEED_URL)
+          const seed = res.ok ? await res.json() : []
+          const base = Date.now()
+          data = seed.map((p, i) =>
+            makePlace({ ...p, created_at: new Date(base + i).toISOString() })
+          )
+          await Promise.all(data.map(p => db.put('places', p)))
+          markSeeded()
+        } catch (err) {
+          console.error('seed error:', err)
+        }
       }
-    } else {
-      setPlaces(data)
+      data.sort((a, b) => a.created_at.localeCompare(b.created_at))
+      setPlaces(await Promise.all(data.map(withAudioUrl)))
+    } catch (err) {
+      console.error('fetchPlaces error:', err)
     }
     setLoading(false)
-  }, [])
+  }, [withAudioUrl])
 
   useEffect(() => {
     fetchPlaces()
   }, [fetchPlaces])
 
+  useEffect(() => {
+    const urls = audioUrls.current
+    return () => urls.forEach(url => URL.revokeObjectURL(url))
+  }, [])
+
   const addPlace = useCallback(async (lat, lng, name = '', brief = '') => {
-    const { data, error } = await supabase
-      .from('places')
-      .insert({ lat, lng, name, brief })
-      .select()
-      .single()
-    if (error) {
-      console.error('addPlace error:', error)
+    try {
+      const place = makePlace({ lat, lng, name, brief })
+      await db.put('places', place)
+      const data = { ...place, audio_url: null }
+      setPlaces(prev => [...prev, data])
+      return data
+    } catch (err) {
+      console.error('addPlace error:', err)
       return null
     }
-    setPlaces(prev => [...prev, data])
-    return data
   }, [])
 
   const updatePlace = useCallback(async (id, fields) => {
-    const { data, error } = await supabase
-      .from('places')
-      .update(fields)
-      .eq('id', id)
-      .select()
-      .single()
-    if (error) {
-      console.error('updatePlace error:', error)
+    try {
+      const existing = await db.get('places', id)
+      if (!existing) return null
+      // audio_url is derived at runtime and never persisted
+      const { audio_url: _ignored, ...rest } = fields
+      const record = { ...existing, ...rest }
+      await db.put('places', record)
+      const data = await withAudioUrl(record)
+      setPlaces(prev => prev.map(p => (p.id === id ? data : p)))
+      return data
+    } catch (err) {
+      console.error('updatePlace error:', err)
       return null
     }
-    setPlaces(prev => prev.map(p => (p.id === id ? data : p)))
-    return data
-  }, [])
+  }, [withAudioUrl])
 
   const removePlace = useCallback(async (id) => {
-    const { error } = await supabase.from('places').delete().eq('id', id)
-    if (error) {
-      console.error('removePlace error:', error)
+    try {
+      await db.remove('places', id)
+      await db.remove('audio', id)
+      revokeAudioUrl(id)
+      setPlaces(prev => prev.filter(p => p.id !== id))
+      return true
+    } catch (err) {
+      console.error('removePlace error:', err)
       return false
     }
-    setPlaces(prev => prev.filter(p => p.id !== id))
-    return true
   }, [])
 
   const uploadAudio = useCallback(async (placeId, blob) => {
-    const path = `audio/${placeId}.webm`
-    const { error: upErr } = await supabase.storage
-      .from('audio')
-      .upload(path, blob, { contentType: 'audio/webm', upsert: true })
-    if (upErr) {
-      console.error('uploadAudio error:', upErr)
+    try {
+      await db.put('audio', { id: placeId, blob })
+      revokeAudioUrl(placeId)
+      const updated = await updatePlace(placeId, { has_audio: true })
+      return updated ? updated.audio_url : null
+    } catch (err) {
+      console.error('uploadAudio error:', err)
       return null
     }
-    const { data: urlData } = supabase.storage.from('audio').getPublicUrl(path)
-    const audioUrl = urlData.publicUrl
-    const updated = await updatePlace(placeId, { audio_url: audioUrl })
-    return updated ? audioUrl : null
   }, [updatePlace])
 
   const deleteAudio = useCallback(async (placeId) => {
-    const path = `audio/${placeId}.webm`
-    const { error } = await supabase.storage.from('audio').remove([path])
-    if (error) {
-      console.error('deleteAudio storage error:', error)
+    try {
+      await db.remove('audio', placeId)
+    } catch (err) {
+      console.error('deleteAudio storage error:', err)
     }
-    await updatePlace(placeId, { audio_url: null })
+    revokeAudioUrl(placeId)
+    await updatePlace(placeId, { has_audio: false })
   }, [updatePlace])
 
   return { places, addPlace, updatePlace, removePlace, uploadAudio, deleteAudio, loading }

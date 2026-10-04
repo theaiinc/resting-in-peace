@@ -86,6 +86,8 @@ export default function App() {
     onTrackFinished: handleTrackFinished,
   })
 
+  const mapApiRef = useRef(null)
+
   // ===== Place interactions =====
   const handleMapClick = useCallback(async (lat, lng) => {
     if (!tapMode) return
@@ -120,6 +122,7 @@ export default function App() {
   const handleCoordPin = useCallback(async (lat, lng) => {
     const place = await addPlace(lat, lng, '', '')
     if (place) {
+      mapApiRef.current?.jumpTo(lat, lng, 18)
       setActivePlace(place)
       setSheetOpen(true)
       showToast('Pin dropped!')
@@ -190,8 +193,6 @@ export default function App() {
     })
     showToast('Track deleted')
   }, [deleteTrack, showToast])
-
-  const mapApiRef = useRef(null)
 
   const handleFitTrack = useCallback((track) => {
     if (!track?.pts?.length) return

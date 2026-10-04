@@ -38,6 +38,18 @@ const TILE_PROBES = [
 ]
 const PROBE_TIMEOUT_MS = 10000
 
+// Pin colors: the most recently added place stands out from older ones
+const PIN_COLOR = '#533483'
+const NEW_PIN_COLOR = '#e94560'
+
+function newestPlaceId(places) {
+  let newest = null
+  for (const p of places) {
+    if (!newest || (p.created_at || '') > (newest.created_at || '')) newest = p
+  }
+  return newest?.id ?? null
+}
+
 // Custom colored pin icon
 function pinIcon(color = '#e94560') {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="36" viewBox="0 0 24 36">
@@ -89,9 +101,9 @@ function MapEventHandler({ tapMode, onMapClick, onMapRef, mapApiRef, places }) {
 }
 
 // Draggable marker wrapper
-function DraggableMarker({ place, onDragEnd, onClick }) {
+function DraggableMarker({ place, isNewest, onDragEnd, onClick }) {
   const markerRef = useRef(null)
-  const icon = pinIcon('#533483')
+  const icon = pinIcon(isNewest ? NEW_PIN_COLOR : PIN_COLOR)
 
   const eventHandlers = {
     dragend() {
@@ -151,6 +163,7 @@ function LeafletMap({
   mapApiRef,
 }) {
   const mapRef = useRef(null)
+  const newestId = newestPlaceId(places)
 
   const handleMapRef = useCallback((map) => {
     mapRef.current = map
@@ -215,6 +228,7 @@ function LeafletMap({
           <DraggableMarker
             key={place.id}
             place={place}
+            isNewest={place.id === newestId}
             onDragEnd={onPlaceDragEnd}
             onClick={onPlaceClick}
           />
@@ -390,11 +404,12 @@ function CanvasMap({
     }
 
     // Draw place markers
+    const newestId = newestPlaceId(places)
     places.forEach(place => {
       const { x, y } = project(place.lat, place.lng)
       ctx.beginPath()
       ctx.arc(x, y - 4, 8, 0, Math.PI * 2)
-      ctx.fillStyle = '#533483'
+      ctx.fillStyle = place.id === newestId ? NEW_PIN_COLOR : PIN_COLOR
       ctx.fill()
       ctx.strokeStyle = 'white'
       ctx.lineWidth = 1.5

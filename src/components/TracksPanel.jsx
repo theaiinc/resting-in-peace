@@ -1,4 +1,5 @@
 import { fmtDist, fmtSec } from '../utils/geo'
+import { Route, X, Eye, EyeOff, Maximize, Trash2 } from 'lucide-react'
 
 export function TracksPanel({
   tracks,
@@ -12,8 +13,8 @@ export function TracksPanel({
     <div className="tracks-panel-overlay" onClick={onClose}>
       <div className="tracks-panel" onClick={e => e.stopPropagation()}>
         <div className="tracks-panel-header">
-          <span className="tracks-panel-title">🛤️ Saved Tracks</span>
-          <button className="tracks-panel-close" onClick={onClose}>✕</button>
+          <span className="tracks-panel-title"><Route size={18} /> Saved Tracks</span>
+          <button className="tracks-panel-close" onClick={onClose} title="Close"><X size={20} /></button>
         </div>
 
         <div className="tracks-list">
@@ -34,7 +35,7 @@ export function TracksPanel({
                   onClick={() => onToggleVisible(track.id)}
                   title={isVisible ? 'Hide track' : 'Show track'}
                 >
-                  {isVisible ? '👁' : '○'}
+                  {isVisible ? <Eye size={14} /> : <EyeOff size={14} />}
                 </button>
 
                 <div className="track-info">
@@ -51,14 +52,14 @@ export function TracksPanel({
                     onClick={() => onFitTrack(track)}
                     title="Fit map to track"
                   >
-                    ⊡
+                    <Maximize size={14} />
                   </button>
                   <button
                     className="track-action-btn danger"
                     onClick={() => onDelete(track.id)}
                     title="Delete track"
                   >
-                    🗑️
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>

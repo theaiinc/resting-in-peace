@@ -25,16 +25,18 @@ L.Icon.Default.mergeOptions({
 
 // Tile URLs
 const TILE_SATELLITE = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-const TILE_STREET = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+// Street tiles come from the same Esri server as satellite: OpenStreetMap's
+// tile servers are unreachable or rate-limited on some mobile networks.
+const TILE_STREET = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
 // Esri has no imagery past z17 here and serves "Map data not yet available"
 // tiles instead, so stop fetching there and let Leaflet upscale z17 tiles.
 const SAT_MAX_NATIVE_ZOOM = 17
-const STREET_MAX_NATIVE_ZOOM = 19
+const STREET_MAX_NATIVE_ZOOM = 18
 const MAP_MAX_ZOOM = 21
-// Probe both providers; the live map is used if either one responds
+// Probe both Esri layers; the live map is used if either one responds
 const TILE_PROBES = [
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/10/514/802',
-  'https://a.tile.openstreetmap.org/10/802/514.png',
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/10/514/802',
 ]
 const PROBE_TIMEOUT_MS = 10000
 
@@ -217,7 +219,7 @@ function LeafletMap({
         ) : (
           <TileLayer
             url={TILE_STREET}
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            attribution='Tiles &copy; Esri'
             maxNativeZoom={STREET_MAX_NATIVE_ZOOM}
             maxZoom={MAP_MAX_ZOOM}
           />

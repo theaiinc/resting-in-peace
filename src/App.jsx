@@ -14,6 +14,7 @@ import { TracksPanel } from './components/TracksPanel'
 import { PlaceSheet } from './components/PlaceSheet'
 import { CoordModal } from './components/CoordModal'
 import { Toast } from './components/Toast'
+import { Pointer } from 'lucide-react'
 
 export default function App() {
   // ===== UI state =====
@@ -49,7 +50,7 @@ export default function App() {
   // ===== GPS callbacks =====
   const handleDwellPin = useCallback(async (lat, lng) => {
     const place = await addPlace(lat, lng, 'Dwell Pin', 'Auto-placed after 30s idle')
-    if (place) showToast('📍 Dwell pin dropped!')
+    if (place) showToast('Dwell pin dropped!')
   }, [addPlace, showToast])
 
   const handleTrackFinished = useCallback(async (pts) => {
@@ -252,7 +253,7 @@ export default function App() {
         {/* Tap mode banner */}
         {tapMode && (
           <div className="tap-mode-banner">
-            👆 Tap map to place pin
+            <Pointer size={16} /> Tap map to place pin
           </div>
         )}
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useVoice } from '../hooks/useVoice'
 import { fmtSec } from '../utils/geo'
+import { X, Check, Pencil, Route, Trash2, Save, Square, Mic } from 'lucide-react'
 
 export function PlaceSheet({
   place,
@@ -116,7 +117,7 @@ export function PlaceSheet({
               {name || <span style={{ color: 'var(--text2)' }}>Unnamed place</span>}
             </div>
           )}
-          <button className="sheet-close" onClick={onClose} title="Close">✕</button>
+          <button className="sheet-close" onClick={onClose} title="Close"><X size={20} /></button>
         </div>
 
         <div className="sheet-coords">
@@ -144,7 +145,7 @@ export function PlaceSheet({
           {editMode ? (
             <>
               <button className="sheet-btn primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving…' : '✓ Save'}
+                {saving ? 'Saving…' : <><Check size={16} /> Save</>}
               </button>
               <button className="sheet-btn" onClick={() => { setEditMode(false); setName(place.name || ''); setBrief(place.brief || '') }}>
                 Cancel
@@ -152,14 +153,14 @@ export function PlaceSheet({
             </>
           ) : (
             <>
-              <button className="sheet-btn" onClick={() => setEditMode(true)}>✏️ Edit</button>
+              <button className="sheet-btn" onClick={() => setEditMode(true)}><Pencil size={16} /> Edit</button>
               <button
                 className="sheet-btn"
                 onClick={() => inRoute ? onRemoveFromRoute(place.id) : onAddToRoute(place.id)}
               >
-                {inRoute ? '🗺️ Remove Route' : '🗺️ Add Route'}
+                <Route size={16} /> {inRoute ? 'Remove Route' : 'Add Route'}
               </button>
-              <button className="sheet-btn danger" onClick={handleRemove}>🗑️ Delete</button>
+              <button className="sheet-btn danger" onClick={handleRemove}><Trash2 size={16} /> Delete</button>
             </>
           )}
         </div>
@@ -174,8 +175,8 @@ export function PlaceSheet({
           {audioUrl && !voice.audioBlob && (
             <div className="voice-player">
               <audio controls src={audioUrl} preload="none" />
-              <button className="sheet-btn danger" style={{ flexShrink: 0 }} onClick={handleDeleteAudio}>
-                🗑️
+              <button className="sheet-btn danger" style={{ flexShrink: 0 }} onClick={handleDeleteAudio} title="Delete voice note">
+                <Trash2 size={16} />
               </button>
             </div>
           )}
@@ -191,10 +192,10 @@ export function PlaceSheet({
                   disabled={uploadingAudio}
                   style={{ flex: 1 }}
                 >
-                  {uploadingAudio ? 'Uploading…' : '💾 Save Note'}
+                  {uploadingAudio ? 'Uploading…' : <><Save size={16} /> Save Note</>}
                 </button>
                 <button className="sheet-btn danger" onClick={() => voice.clearAudio()}>
-                  🗑️ Discard
+                  <Trash2 size={16} /> Discard
                 </button>
               </div>
             </div>
@@ -210,7 +211,7 @@ export function PlaceSheet({
                 onPointerUp={handleRecPointerUp}
                 title={voice.isRecording ? 'Stop recording' : 'Record voice note'}
               >
-                {voice.isRecording ? '⏹' : '🎙️'}
+                {voice.isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={20} />}
               </button>
               {voice.isRecording && (
                 <span className="rec-timer">{fmtSec(voice.recSeconds)}</span>

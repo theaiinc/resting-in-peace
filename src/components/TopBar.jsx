@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { parseCoords } from '../utils/geo'
+import { Search } from 'lucide-react'
 
 export function TopBar({ placeCount, onFitAll, onSearch, onError }) {
   const [query, setQuery] = useState('')
@@ -8,7 +9,7 @@ export function TopBar({ placeCount, onFitAll, onSearch, onError }) {
     if (e.key !== 'Enter') return
     const coords = parseCoords(query.trim())
     if (!coords) {
-      onError?.('⚠ Use format: lat, lng')
+      onError?.('Use format: lat, lng')
       return
     }
     onSearch(coords)
@@ -18,7 +19,7 @@ export function TopBar({ placeCount, onFitAll, onSearch, onError }) {
   return (
     <div className="top-bar">
       <div className="search-wrap">
-        <span className="search-icon">🔍</span>
+        <span className="search-icon"><Search size={16} /></span>
         <input
           className="search-input"
           value={query}

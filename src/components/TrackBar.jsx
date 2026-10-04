@@ -1,4 +1,5 @@
 import { fmtDist, fmtSec, haversine } from '../utils/geo'
+import { Circle, Square } from 'lucide-react'
 
 export function TrackBar({ currentTrack, onStop }) {
   if (!currentTrack || currentTrack.length === 0) return null
@@ -18,14 +19,14 @@ export function TrackBar({ currentTrack, onStop }) {
   return (
     <div className="track-bar">
       <span style={{ color: 'var(--accent)', fontWeight: 700, animation: 'pulse 1s infinite' }}>
-        ● REC
+        <Circle size={10} fill="currentColor" /> REC
       </span>
       <span style={{ fontSize: 12, color: 'var(--text2)' }}>
         {fmtDist(trackDist)} · {fmtSec(trackDurSec)}
       </span>
       <div style={{ flex: 1 }} />
       <button className="stop-track-btn" onClick={onStop}>
-        ■ Stop & Save
+        <Square size={10} fill="currentColor" /> Stop & Save
       </button>
     </div>
   )

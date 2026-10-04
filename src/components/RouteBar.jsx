@@ -1,4 +1,5 @@
 import { haversine, fmtDist } from '../utils/geo'
+import { ChevronRight, X } from 'lucide-react'
 
 export function RouteBar({ routeIds, places, onRemoveFromRoute, onClearRoute }) {
   if (routeIds.length === 0) return null
@@ -21,13 +22,13 @@ export function RouteBar({ routeIds, places, onRemoveFromRoute, onClearRoute }) 
       <div className="route-places">
         {routePlaces.map((p, i) => (
           <div key={p.id} className="route-place-chip">
-            {i > 0 && <span style={{ color: 'var(--text2)', marginRight: 2 }}>→</span>}
+            {i > 0 && <ChevronRight size={12} style={{ color: 'var(--text2)', marginRight: 2 }} />}
             <span>{p.name || 'Pin'}</span>
             <button
               onClick={() => onRemoveFromRoute(p.id)}
               title="Remove from route"
             >
-              ✕
+              <X size={12} />
             </button>
           </div>
         ))}

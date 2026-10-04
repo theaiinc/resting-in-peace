@@ -1,4 +1,5 @@
 import { fmtSec, fmtDist, haversine } from '../utils/geo'
+import { PersonStanding, Footprints, Car, MapPin, Circle, Square } from 'lucide-react'
 
 export function StatusBar({ gps, onStopTrack }) {
   const { motionState, recording, currentTrack, status } = gps
@@ -15,24 +16,24 @@ export function StatusBar({ gps, onStopTrack }) {
     ? Math.round((currentTrack[currentTrack.length - 1].t - currentTrack[0].t) / 1000)
     : 0
 
-  const motionIcon = {
-    idle: '🧍',
-    walking: '🚶',
-    vehicle: '🚗'
-  }[motionState] || '📍'
+  const MotionIcon = {
+    idle: PersonStanding,
+    walking: Footprints,
+    vehicle: Car
+  }[motionState] || MapPin
 
   return (
     <div className="status-bar">
-      <span className="status-icon">{motionIcon}</span>
+      <span className="status-icon"><MotionIcon size={16} /></span>
       <span className="status-text">{status}</span>
       {recording && (
         <span className="rec-indicator">
-          ● REC {fmtDist(trackDist)} {fmtSec(trackDurSec)}
+          <Circle size={10} fill="currentColor" /> REC {fmtDist(trackDist)} {fmtSec(trackDurSec)}
         </span>
       )}
       {recording && (
         <button className="stop-track-btn" onClick={onStopTrack}>
-          ■ Save Track
+          <Square size={10} fill="currentColor" /> Save Track
         </button>
       )}
     </div>

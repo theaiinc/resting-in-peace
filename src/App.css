@@ -1029,3 +1029,26 @@ input, textarea {
 button {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Lucide icons: align with button/label text */
+.fab-item, .layer-btn, .sheet-btn, .sheet-close, .search-icon, .status-icon,
+.stop-track-btn, .tracks-panel-close, .tracks-panel-title, .tap-mode-banner,
+.rec-indicator, .track-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.track-bar > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.lucide {
+  flex-shrink: 0;
+}
